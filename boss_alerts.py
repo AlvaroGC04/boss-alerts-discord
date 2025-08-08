@@ -51,24 +51,26 @@ def send_discord_message(region, boss_name, spawn_time):
     payload = {"content": message}
     requests.post(WEBHOOK_URL, json=payload)
 
-while True:
-    now = datetime.datetime.now(tz_cot)
-    current_day = now.strftime("%a")
-    current_time = now.strftime("%H:%M")
+# ---- Inicio de la lógica del bot ----
+now = datetime.datetime.now(tz_cot)
+current_day = now.strftime("%a")
+current_time = now.strftime("%H:%M")
 
-    for region, schedule in boss_schedule.items():
-        if current_day in schedule:
-            for event in schedule[current_day]:
-                try:
-                    spawn_time, *bosses = event.split()
-                    spawn_dt = datetime.datetime.strptime(spawn_time, "%H:%M").replace(
-                        year=now.year, month=now.month, day=now.day, tzinfo=tz_cot
-                    )
-                    if 0 <= (spawn_dt - now).total_seconds() <= 300:  # 5 minutos antes de su spawn original
-                        for boss in bosses:
-                            if boss in BOSSES:
-                                send_discord_message(region, boss, spawn_time)
-                except ValueError:
-                    continue
+for region, schedule in boss_schedule.items():
+    if current_day in schedule:
+        for event in schedule[current_day]:
+            # Arreglo para manejar múltiples jefes
+            parts = event.split()
+            spawn_time = parts[0]
+            bosses = parts[1:]
 
-    time.sleep(60)
+            try:
+                spawn_dt = datetime.datetime.strptime(spawn_time, "%H:%M").replace(
+                    year=now.year, month=now.month, day=now.day, tzinfo=tz_cot
+                )
+                if 0 <= (spawn_dt - now).total_seconds() <= 300: # 5 minutos antes de su spawn original
+                    for boss in bosses:
+                        if boss in BOSSES:
+                            send_discord_message(region, boss, spawn_time)
+            except ValueError:
+                continue
